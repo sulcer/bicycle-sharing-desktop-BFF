@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "si.feri";
+option java_outer_classname = "PaymentProto";
+
+package payment;
+
+service PaymentGrpcService {
+  rpc CreatePayment(CreatePaymentRequest) returns (CreatePaymentResponse) {}
+  rpc GetPayment(GetPaymentRequest) returns (GetPaymentResponse) {}
+  rpc GetAllPayments(GetAllPaymentsRequest) returns (GetAllPaymentsResponse) {}
+  rpc UpdatePayment(UpdatePaymentRequest) returns (UpdatePaymentResponse) {}
+  rpc DeletePayment(DeletePaymentRequest) returns (DeletePaymentResponse) {}
+}
+
+message CreatePaymentRequest {
+  double amount = 1;
+  string userId = 3;
+  string description = 2;
+}
+
+message CreatePaymentResponse {
+  string id = 1;
+  string userId = 2;
+  string description = 3;
+  double amount = 4;
+  string createdAt = 5;
+  string updatedAt = 6;
+}
+
+message GetPaymentRequest {
+  string id = 1;
+}
+
+message GetPaymentResponse {
+  string id = 1;
+  string userId = 2;
+  string description = 3;
+  double amount = 4;
+  string createdAt = 5;
+  string updatedAt = 6;
+}
+
+message GetAllPaymentsRequest {}
+
+message GetAllPaymentsResponse {
+  repeated GetPaymentResponse payments = 1;
+}
+
+message UpdatePaymentRequest {
+  string id = 1;
+  double amount = 2;
+  string description = 3;
+}
+
+message UpdatePaymentResponse {
+  string message = 1;
+}
+
+message DeletePaymentRequest {
+  string id = 1;
+}
+
+message DeletePaymentResponse {
+  string message = 1;
+}
