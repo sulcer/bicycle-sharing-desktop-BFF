@@ -24,7 +24,7 @@ jobs:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
 
       - name: Docker Build
-        run: docker build . --file Dockerfile --tag sulcer/bicycle-sharing-desktop-BFF
+        run: docker build . --file Dockerfile --tag sulcer/bicycle-sharing-desktop-bff
 
       - name: DockerHub Push
-        run: docker push sulcer/bicycle-sharing-desktop-BFF
+        run: docker push sulcer/bicycle-sharing-desktop-bff
