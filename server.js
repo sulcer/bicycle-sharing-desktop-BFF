@@ -7,6 +7,7 @@ import { services } from "./services/services.js";
 import 'dotenv/config';
 import * as protoLoader from "@grpc/proto-loader";
 import * as grpc from "@grpc/grpc-js";
+import axios from "axios";
 
 const packageDefinition = protoLoader.loadSync('proto/payment.proto', {
     keepCase: true,
@@ -130,6 +131,20 @@ app.delete('/payment-service/delete', (req, res) => {
         }
 
         res.json(response);
+    });
+});
+
+app.post('/users-service/create', (req, res) => {
+    console.log(req.body);
+    axios.post(`${process.env.USER_SERVICE_URL}/users`, req.body).then(r => {
+        res.json(r.data);
+    });
+});
+
+app.post('/stations-service/create', (req, res) => {
+    console.log(req.body);
+    axios.post(`${process.env.STATION_SERVICE_URL}/station/`, req.body).then(r => {
+        res.json(r.data);
     });
 });
 
