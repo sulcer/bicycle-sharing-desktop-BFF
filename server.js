@@ -20,7 +20,7 @@ const service = grpc.loadPackageDefinition(packageDefinition).payment;
 const client = new service.PaymentGrpcService(process.env.PAYMENT_SERVICE_URL, grpc.credentials.createInsecure());
 
 const app = express();
-const port = 3001 || process.env.PORT;
+const port = 3005 || process.env.PORT;
 
 app.use(cors({ origin: "*" }));
 app.use(helmet());
@@ -100,7 +100,7 @@ app.get('/payment-service/getOne', (req, res) => {
     });
 });
 
-app.post('/payment-service/create', (req, res) => {
+app.post('/payment-service/add', (req, res) => {
     client.CreatePayment(req.body, (error, response) => {
         if (error) {
             console.error(error);
