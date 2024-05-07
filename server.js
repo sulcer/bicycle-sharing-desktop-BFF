@@ -8,6 +8,7 @@ import 'dotenv/config';
 import * as protoLoader from "@grpc/proto-loader";
 import * as grpc from "@grpc/grpc-js";
 import axios from "axios";
+import jwt from "jsonwebtoken";
 
 const packageDefinition = protoLoader.loadSync('proto/payment.proto', {
     keepCase: true,
@@ -27,6 +28,49 @@ app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(morgan("combined"));
 app.use(express.json());
+
+// jwt authentication
+app.post('/login', (req, res) => {
+    const username = req.body.username;
+    const user = { name: username };
+
+    const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+    const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
+
+    res.json({ accessToken: accessToken, refreshToken: refreshToken });
+});
+
+
+let refreshTokens = [];
+app.post('/token', (req, res) => {
+    const refreshToken = req.body.token;
+    if (refreshToken == null) return res.sendStatus(401);
+    if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
+
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        const accessToken = jwt.sign({ name: user.name }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+        res.json({ accessToken: accessToken });
+    });
+});
+
+app.delete('/logout', (req, res) => {
+    refreshTokens = refreshTokens.filter(token => token !== req.body.token);
+    res.sendStatus(204);
+});
+
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+}
 
 const rateLimit = process.env.RATELIMIT;
 const rateLimitInterval = process.env.RATELIMIT_WINDOW;
@@ -79,7 +123,7 @@ services.forEach(({ route, target }) => {
     app.use(route, rateLimiter, createProxyMiddleware(proxyOptions));
 });
 
-app.get('/payment-service/getAll', (req, res) => {
+app.get('/payment-service/getAll', authenticateToken, (req, res) => {
     client.GetAllPayments({}, (error, response) => {
         if (error) {
             console.error(error);
@@ -90,7 +134,7 @@ app.get('/payment-service/getAll', (req, res) => {
     });
 });
 
-app.get('/payment-service/getOne', (req, res) => {
+app.get('/payment-service/getOne', authenticateToken, (req, res) => {
     client.GetPayment(req.body, (error, response) => {
         if (error) {
             console.error(error);
@@ -101,7 +145,7 @@ app.get('/payment-service/getOne', (req, res) => {
     });
 });
 
-app.post('/payment-service/add', (req, res) => {
+app.post('/payment-service/add', authenticateToken, (req, res) => {
     client.CreatePayment(req.body, (error, response) => {
         if (error) {
             console.error(error);
@@ -112,7 +156,7 @@ app.post('/payment-service/add', (req, res) => {
     });
 });
 
-app.put('/payment-service/update', (req, res) => {
+app.put('/payment-service/update', authenticateToken, (req, res) => {
     client.UpdatePayment(req.body, (error, response) => {
         if (error) {
             console.error(error);
@@ -123,7 +167,7 @@ app.put('/payment-service/update', (req, res) => {
     });
 });
 
-app.delete('/payment-service/delete', (req, res) => {
+app.delete('/payment-service/delete', authenticateToken, (req, res) => {
     client.DeletePayment(req.body, (error, response) => {
         if (error) {
             console.error(error);
@@ -134,14 +178,14 @@ app.delete('/payment-service/delete', (req, res) => {
     });
 });
 
-app.post('/users-service/create', (req, res) => {
+app.post('/users-service/create', authenticateToken, (req, res) => {
     console.log(req.body);
     axios.post(`${process.env.USER_SERVICE_URL}/users`, req.body).then(r => {
         res.json(r.data);
     });
 });
 
-app.post('/stations-service/create', (req, res) => {
+app.post('/stations-service/create', authenticateToken, (req, res) => {
     console.log(req.body);
     axios.post(`${process.env.STATION_SERVICE_URL}/station/`, req.body).then(r => {
         res.json(r.data);
